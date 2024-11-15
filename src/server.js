@@ -48,10 +48,12 @@ app.use((req, res, next) => {
 // Error handling middleware
 app.use(errorHandler);
 
-// Start the server
-app.listen(PORT, () => {
-  console.log(`Reverse proxy running on port ${PORT}`);
-  console.log('Configured services:', Object.keys(services).join(', '));
-});
+// Start the server only if not in test environment
+if (process.env.NODE_ENV !== 'test') {
+  app.server = app.listen(PORT, () => {
+    console.log(`Reverse proxy running on port ${PORT}`);
+    console.log('Configured services:', Object.keys(services).join(', '));
+  });
+}
 
 module.exports = app;

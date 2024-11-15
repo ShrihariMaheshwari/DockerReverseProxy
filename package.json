@@ -6,7 +6,7 @@
   "scripts": {
     "start": "node src/server.js",
     "dev": "nodemon src/server.js",
-    "test": "jest",
+    "test": "NODE_ENV=test jest --forceExit",
     "examples": "node examples/test-services/service1.js & node examples/test-services/service2.js & node examples/test-services/service3.js"
   },
   "dependencies": {
