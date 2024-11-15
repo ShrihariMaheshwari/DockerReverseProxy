@@ -295,17 +295,3 @@ DEBUG=proxy:* npm start
 - [ ] Add WebSocket support
 - [ ] Improve metrics visualization
 
-## 📞 Support
-
-For support, please:
-1. Check the documentation
-2. Search existing issues
-3. Create a new issue with:
-   - Detailed description
-   - Steps to reproduce
-   - Expected vs actual behavior
-   - Environment details
-
-## 🔄 Updates
-
-Check the [CHANGELOG.md](CHANGELOG.md) for version history and updates.
