@@ -1,4 +1,5 @@
 const EventEmitter = require('events');
+const monitoring = require('./monitoring');
 
 class ServiceRegistry extends EventEmitter {
   constructor() {
@@ -6,51 +7,102 @@ class ServiceRegistry extends EventEmitter {
     this.services = new Map();
     this.healthCheckInterval = 10000; // 10 seconds
     this.intervalId = null;
-    this.startHealthChecks();
   }
 
-  // Register a service
-  registerService(name, host, port) {
-    const serviceId = `${name}-${host}-${port}`;
-    const serviceUrl = `http://${host}:${port}`;
+  // Register a service with domain support
+  registerService(domain, target) {
+    const serviceName = domain.split('.')[0];
     
-    this.services.set(serviceId, {
-      name,
-      host,
-      port,
-      url: serviceUrl,
+    const serviceInfo = {
+      name: serviceName,
+      domain,
+      url: target,
       status: 'healthy',
-      lastCheck: Date.now()
-    });
+      lastCheck: Date.now(),
+      metrics: {
+        totalRequests: 0,
+        errorCount: 0,
+        lastResponseTime: null
+      }
+    };
 
-    console.log(`Service registered: ${name} at ${serviceUrl}`);
-    this.emit('service-added', { name, url: serviceUrl });
-    return serviceId;
+    this.services.set(domain, serviceInfo);
+
+    // Update Prometheus metrics
+    monitoring.metrics.activeServices.set(this.services.size);
+    monitoring.metrics.serviceHealthStatus.set(
+      { service_name: serviceName, service_url: target, domain },
+      1
+    );
+
+    console.log(`Service registered: ${serviceName} at ${target} (${domain})`);
+    this.emit('service-added', serviceInfo);
+    
+    return domain;
   }
 
   // Remove a service
-  removeService(serviceId) {
-    const service = this.services.get(serviceId);
+  removeService(domain) {
+    const service = this.services.get(domain);
     if (service) {
-      this.services.delete(serviceId);
-      console.log(`Service removed: ${service.name} at ${service.url}`);
+      this.services.delete(domain);
+      
+      // Update Prometheus metrics
+      monitoring.metrics.activeServices.set(this.services.size);
+      monitoring.metrics.serviceHealthStatus.remove({
+        service_name: service.name,
+        service_url: service.url,
+        domain
+      });
+
+      console.log(`Service removed: ${service.name} at ${service.url} (${domain})`);
       this.emit('service-removed', service);
     }
   }
 
-  // Get all instances of a service
-  getService(name) {
-    return Array.from(this.services.values())
-      .filter(service => service.name === name && service.status === 'healthy');
+  // Get service by domain
+  getService(domain) {
+    return this.services.get(domain);
+  }
+
+  // Update service metrics
+  updateServiceMetrics(domain, responseTime, isError = false) {
+    const service = this.services.get(domain);
+    if (service) {
+      service.metrics.totalRequests++;
+      service.metrics.lastResponseTime = responseTime;
+      if (isError) {
+        service.metrics.errorCount++;
+      }
+
+      monitoring.metrics.serviceResponseTime.observe(
+        { service_name: service.name, domain },
+        responseTime / 1000
+      );
+    }
   }
 
   // Health check
   async checkHealth(service) {
+    const startTime = Date.now();
     try {
       const response = await fetch(`${service.url}/health`);
-      return response.status === 200;
+      const responseTime = Date.now() - startTime;
+      
+      const isHealthy = response.status === 200;
+      
+      monitoring.metrics.serviceResponseTime.observe(
+        { service_name: service.name, domain: service.domain },
+        responseTime / 1000
+      );
+
+      return isHealthy;
     } catch (error) {
       console.error(`Health check failed for ${service.url}:`, error.message);
+      monitoring.metrics.proxyErrors.inc({
+        service_name: service.name,
+        error_type: 'health_check_failed'
+      });
       return false;
     }
   }
@@ -62,16 +114,26 @@ class ServiceRegistry extends EventEmitter {
     }
     
     this.intervalId = setInterval(async () => {
-      for (const [serviceId, service] of this.services) {
+      for (const [domain, service] of this.services) {
         const isHealthy = await this.checkHealth(service);
         const previousStatus = service.status;
         service.status = isHealthy ? 'healthy' : 'unhealthy';
         service.lastCheck = Date.now();
 
+        // Update Prometheus metrics
+        monitoring.metrics.serviceHealthStatus.set(
+          {
+            service_name: service.name,
+            service_url: service.url,
+            domain
+          },
+          isHealthy ? 1 : 0
+        );
+
         if (previousStatus !== service.status) {
           console.log(`Service ${service.name} health status changed to ${service.status}`);
           this.emit('health-status-changed', {
-            serviceId,
+            domain,
             name: service.name,
             status: service.status
           });
@@ -80,7 +142,6 @@ class ServiceRegistry extends EventEmitter {
     }, this.healthCheckInterval);
   }
 
-  // Stop health checks - add this method
   stopHealthChecks() {
     if (this.intervalId) {
       clearInterval(this.intervalId);
@@ -88,10 +149,35 @@ class ServiceRegistry extends EventEmitter {
     }
   }
 
-  // Clear all services - add this method
   clearServices() {
-    this.services.clear();
+    for (const [domain, service] of this.services) {
+      this.removeService(domain);
+    }
     this.stopHealthChecks();
+  }
+
+  // Get services statistics
+  getStatistics() {
+    const stats = {
+      total: this.services.size,
+      healthy: 0,
+      unhealthy: 0,
+      services: {}
+    };
+
+    for (const [domain, service] of this.services) {
+      if (service.status === 'healthy') stats.healthy++;
+      else stats.unhealthy++;
+
+      stats.services[domain] = {
+        name: service.name,
+        status: service.status,
+        lastCheck: service.lastCheck,
+        metrics: service.metrics
+      };
+    }
+
+    return stats;
   }
 }
 
