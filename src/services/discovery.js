@@ -5,9 +5,11 @@ class ServiceRegistry extends EventEmitter {
     super();
     this.services = new Map();
     this.healthCheckInterval = 10000; // 10 seconds
+    this.intervalId = null;
     this.startHealthChecks();
   }
 
+  // Register a service
   registerService(name, host, port) {
     const serviceId = `${name}-${host}-${port}`;
     const serviceUrl = `http://${host}:${port}`;
@@ -26,6 +28,7 @@ class ServiceRegistry extends EventEmitter {
     return serviceId;
   }
 
+  // Remove a service
   removeService(serviceId) {
     const service = this.services.get(serviceId);
     if (service) {
@@ -35,11 +38,13 @@ class ServiceRegistry extends EventEmitter {
     }
   }
 
+  // Get all instances of a service
   getService(name) {
     return Array.from(this.services.values())
       .filter(service => service.name === name && service.status === 'healthy');
   }
 
+  // Health check
   async checkHealth(service) {
     try {
       const response = await fetch(`${service.url}/health`);
@@ -50,8 +55,13 @@ class ServiceRegistry extends EventEmitter {
     }
   }
 
+  // Start health checks
   startHealthChecks() {
-    setInterval(async () => {
+    if (this.intervalId) {
+      clearInterval(this.intervalId);
+    }
+    
+    this.intervalId = setInterval(async () => {
       for (const [serviceId, service] of this.services) {
         const isHealthy = await this.checkHealth(service);
         const previousStatus = service.status;
@@ -69,6 +79,22 @@ class ServiceRegistry extends EventEmitter {
       }
     }, this.healthCheckInterval);
   }
+
+  // Stop health checks - add this method
+  stopHealthChecks() {
+    if (this.intervalId) {
+      clearInterval(this.intervalId);
+      this.intervalId = null;
+    }
+  }
+
+  // Clear all services - add this method
+  clearServices() {
+    this.services.clear();
+    this.stopHealthChecks();
+  }
 }
 
-module.exports = new ServiceRegistry();
+// Export a singleton instance
+const serviceRegistry = new ServiceRegistry();
+module.exports = serviceRegistry;

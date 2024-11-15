@@ -169,18 +169,6 @@ curl http://localhost:3000/health
   - `service_health_status`: Service health status (1 = healthy, 0 = unhealthy)
   - `active_services_total`: Total number of active services
 
-### Example Queries
-In Prometheus UI:
-```
-# Request rate
-rate(http_request_duration_seconds_count[5m])
-
-# Service health
-service_health_status
-
-# Active services
-active_services_total
-```
 
 ## Testing
 

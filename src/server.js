@@ -9,6 +9,8 @@ const metricsMiddleware = require('./middleware/metrics');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+const isTest = process.env.NODE_ENV === 'test';
+
 // Apply middleware
 app.use(express.json());
 app.use(loggingMiddleware);
@@ -17,9 +19,9 @@ app.use(metricsMiddleware);
 // Auto-register services on startup
 const initializeServices = () => {
   const defaultServices = [
-    { name: 'service1', host: 'service1', port: '3001' },
-    { name: 'service2', host: 'service2', port: '3002' },
-    { name: 'service3', host: 'service3', port: '3003' }
+    { name: 'service1', host: isTest ? 'localhost' : 'service1', port: '3001' },
+    { name: 'service2', host: isTest ? 'localhost' : 'service2', port: '3002' },
+    { name: 'service3', host: isTest ? 'localhost' : 'service3', port: '3003' }
   ];
 
   defaultServices.forEach(service => {
@@ -130,10 +132,18 @@ app.use((req, res, next) => {
 // Error handling middleware
 app.use(errorHandler);
 
-// Initialize services and start server
-app.listen(PORT, () => {
-  console.log(`Reverse proxy running on port ${PORT}`);
-  initializeServices(); // Auto-register services
-});
+// Modify the server startup
+if (process.env.NODE_ENV !== 'test') {
+  app.server = app.listen(PORT, () => {
+    console.log(`Reverse proxy running on port ${PORT}`);
+    initializeServices();
+  });
+} else {
+  // For testing, start the server but also initialize services
+  app.server = app.listen(PORT, () => {
+    console.log(`Reverse proxy running on port ${PORT}`);
+    initializeServices();
+  });
+}
 
 module.exports = app;

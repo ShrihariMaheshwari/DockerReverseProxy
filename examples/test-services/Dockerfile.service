@@ -2,17 +2,21 @@ FROM node:18-alpine
 
 WORKDIR /app
 
-# Copy package files first for better caching
+# Copy package files
 COPY package*.json ./
 
 # Install dependencies
-RUN npm install --omit=dev
+RUN npm install
 
 # Copy service files
 COPY service*.js ./
 
-# Expose port (will be overridden by docker-compose)
+# Expose port
 EXPOSE 3000
 
-# Command will be specified in docker-compose.yml
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+  CMD wget --quiet --tries=1 --spider http://localhost:$PORT/health || exit 1
+
+# Default command
 CMD ["node", "service1.js"]
