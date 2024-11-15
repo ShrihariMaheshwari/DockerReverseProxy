@@ -1,0 +1,46 @@
+version: '3.8'
+
+services:
+  reverse-proxy:
+    build: .
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+    networks:
+      - proxy-network
+
+  service1:
+    build: 
+      context: ./examples/test-services
+      dockerfile: Dockerfile.service
+    environment:
+      - PORT=3001
+      - SERVICE_NAME=service1
+    networks:
+      - proxy-network
+
+  service2:
+    build:
+      context: ./examples/test-services
+      dockerfile: Dockerfile.service
+    environment:
+      - PORT=3002
+      - SERVICE_NAME=service2
+    networks:
+      - proxy-network
+
+  service3:
+    build:
+      context: ./examples/test-services
+      dockerfile: Dockerfile.service
+    environment:
+      - PORT=3003
+      - SERVICE_NAME=service3
+    networks:
+      - proxy-network
+
+networks:
+  proxy-network:
+    driver: bridge

@@ -1,0 +1,23 @@
+{
+  "name": "node-reverse-proxy",
+  "version": "1.0.0",
+  "description": "A simple reverse proxy server built with Node.js",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "nodemon src/server.js",
+    "test": "jest",
+    "examples": "node examples/test-services/service1.js & node examples/test-services/service2.js & node examples/test-services/service3.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "http-proxy-middleware": "^2.0.6",
+    "morgan": "^1.10.0",
+    "dotenv": "^16.0.3"
+  },
+  "devDependencies": {
+    "jest": "^29.5.0",
+    "nodemon": "^2.0.22",
+    "supertest": "^6.3.3"
+  }
+}
