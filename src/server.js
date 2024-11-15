@@ -15,6 +15,7 @@ const isTest = process.env.NODE_ENV === 'test';
 app.use(express.json());
 app.use(loggingMiddleware);
 app.use(metricsMiddleware);
+app.use('/admin', express.static('public'));
 
 // Auto-register services on startup
 const initializeServices = () => {
