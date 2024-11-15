@@ -1,0 +1,17 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+scrape_configs:
+  - job_name: 'reverse-proxy'
+    static_configs:
+      - targets: ['reverse-proxy:3000']
+    metrics_path: '/metrics'
+
+  - job_name: 'services'
+    static_configs:
+      - targets:
+        - 'service1:3001'
+        - 'service2:3002'
+        - 'service3:3003'
+    metrics_path: '/metrics'

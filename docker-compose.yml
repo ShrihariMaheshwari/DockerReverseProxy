@@ -9,6 +9,7 @@ services:
     networks:
       - proxy-network
     depends_on:
+      - prometheus
       - service1
       - service2
       - service3
@@ -22,15 +23,11 @@ services:
       - SERVICE_NAME=service1
     networks:
       - proxy-network
-    command: ["node", "service1.js"]
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:3001/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
+    deploy:
+      replicas: 2
 
   service2:
-    build:
+    build: 
       context: ./examples/test-services
       dockerfile: Dockerfile.service
     environment:
@@ -38,15 +35,11 @@ services:
       - SERVICE_NAME=service2
     networks:
       - proxy-network
-    command: ["node", "service2.js"]
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:3002/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
+    deploy:
+      replicas: 2
 
   service3:
-    build:
+    build: 
       context: ./examples/test-services
       dockerfile: Dockerfile.service
     environment:
@@ -54,13 +47,25 @@ services:
       - SERVICE_NAME=service3
     networks:
       - proxy-network
-    command: ["node", "service3.js"]
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:3003/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
+    deploy:
+      replicas: 2
+
+  prometheus:
+    image: prom/prometheus:latest
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./src/config/prometheus:/etc/prometheus  
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+    networks:
+      - proxy-network
 
 networks:
   proxy-network:
     driver: bridge
+
+volumes:
+  prometheus_data:
