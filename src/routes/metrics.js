@@ -34,7 +34,7 @@ router.get('/metrics/services', (req, res) => {
       domain: s.domain,
       url: s.url,
       status: s.status,
-      last_check: s.lastCheck,
+      last_check: s.lastCheck || null,
       metrics: {
         total_requests: s.metrics.totalRequests,
         error_count: s.metrics.errorCount,

@@ -69,6 +69,7 @@ class ServiceRegistry extends EventEmitter {
   updateServiceMetrics(domain, responseTime, isError = false) {
     const service = this.services.get(domain);
     if (service) {
+      service.lastCheck = Date.now();
       service.metrics.totalRequests++;
       service.metrics.lastResponseTime = responseTime;
       if (isError) {

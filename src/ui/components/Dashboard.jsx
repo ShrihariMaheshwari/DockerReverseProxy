@@ -31,6 +31,29 @@ export default function Dashboard() {
     }
   };
 
+  const formatDate = (timestamp) => {
+    if (!timestamp) return 'No check performed';
+    
+    try {
+      // First try parsing as a timestamp
+      const date = new Date(timestamp);
+      
+      // Check if date is valid
+      if (isNaN(date.getTime())) {
+        return 'Invalid Date';
+      }
+      
+      // Format the date
+      return date.toLocaleString('en-US', {
+        dateStyle: 'medium',
+        timeStyle: 'medium'
+      });
+    } catch (error) {
+      console.error('Date parsing error:', error);
+      return 'Invalid Date Format';
+    }
+  };
+
   return (
     <div style={{ padding: '20px', maxWidth: '1200px', margin: '0 auto' }}>
       <h1 style={{ marginBottom: '20px', color: '#333' }}>Reverse Proxy Dashboard</h1>
@@ -96,7 +119,7 @@ export default function Dashboard() {
               <div style={{ marginBottom: '15px' }}>
                 <strong>Last Check:</strong>
                 <div style={{ marginTop: '4px', color: '#666' }}>
-                  {new Date(service.lastCheck).toLocaleString()}
+                {formatDate(service.lastCheck)}
                 </div>
               </div>
             </div>
