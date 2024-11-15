@@ -1,18 +1,23 @@
 const express = require('express');
 const app = express();
 const port = process.env.PORT || 3002;
+const serviceName = process.env.SERVICE_NAME || 'service2';
 
 app.get('/', (req, res) => {
   res.json({
-    service: 'Service 2',
-    time: new Date().toISOString()
+    service: serviceName,
+    time: new Date().toISOString(),
+    port: port
   });
 });
 
 app.get('/health', (req, res) => {
-  res.json({ status: 'healthy' });
+  res.json({ 
+    status: 'healthy',
+    service: serviceName
+  });
 });
 
-app.listen(port, () => {
-  console.log(`Service 2 listening at http://localhost:${port}`);
+app.listen(port, '0.0.0.0', () => {
+  console.log(`${serviceName} listening at http://0.0.0.0:${port}`);
 });
