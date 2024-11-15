@@ -164,11 +164,6 @@ curl http://localhost:3000/health
 ### Prometheus
 - Access Prometheus UI: http://localhost:9090
 - View targets: http://localhost:9090/targets
-- Available metrics:
-  - `http_request_duration_seconds`: Request duration histogram
-  - `service_health_status`: Service health status (1 = healthy, 0 = unhealthy)
-  - `active_services_total`: Total number of active services
-
 
 ## Testing
 
