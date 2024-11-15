@@ -49,7 +49,11 @@ app.use(loggingMiddleware);
 app.use(metricsMiddleware);
 
 // Serve static files for admin dashboard
-app.use('/admin', express.static(path.join(__dirname, 'public')));
+app.use('/admin', (req, res, next) => {
+  // Remove /admin from the path when serving static files
+  req.url = req.url.replace(/^\/admin/, '');
+  express.static(path.join(__dirname, '../public'))(req, res, next);
+});
 
 // Mount routes
 app.use('/', healthRoutes);
@@ -90,6 +94,11 @@ app.post('/services/register', (req, res) => {
       message: error.message
     });
   }
+});
+
+// Fallback route for admin SPA
+app.get('/admin/*', (req, res) => {
+  res.sendFile(path.join(__dirname, '../public/index.html'));
 });
 
 // Get services endpoint

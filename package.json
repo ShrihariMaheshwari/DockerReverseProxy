@@ -12,7 +12,9 @@
     "examples": "node examples/test-services/service1.js & node examples/test-services/service2.js & node examples/test-services/service3.js",
     "build:ui": "webpack --mode production",
     "dev:ui": "webpack serve --mode development",
-    "watch:ui": "webpack --watch --mode development"
+    "clean": "rm -rf public/*",
+    "watch:ui": "webpack --watch --mode development",
+    "start:all": "npm run build:ui && npm start"
   },
   "jest": {
     "testEnvironment": "node",

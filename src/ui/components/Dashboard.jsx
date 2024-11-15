@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 export default function Dashboard() {
   const [services, setServices] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     fetchServices();
@@ -11,14 +12,22 @@ export default function Dashboard() {
   }, []);
 
   const fetchServices = async () => {
+    setLoading(true);
     try {
       const response = await fetch('/metrics/services');
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
       const data = await response.json();
       if (data && data.services) {
         setServices(data.services);
       }
+      setError(null);
     } catch (error) {
       console.error('Failed to fetch services:', error);
+      setError('Failed to fetch services. Please try again.');
+    } finally {
+      setLoading(false);
     }
   };
 
