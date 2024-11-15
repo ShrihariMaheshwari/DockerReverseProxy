@@ -1,14 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { AlertCircle, CheckCircle, RefreshCw, Settings, Activity } from 'lucide-react';
 
 export default function Dashboard() {
   const [services, setServices] = useState([]);
-  const [metrics, setMetrics] = useState({});
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     fetchServices();
-    const interval = setInterval(fetchServices, 10000);
+    const interval = setInterval(fetchServices, 5000);
     return () => clearInterval(interval);
   }, []);
 
@@ -16,96 +14,136 @@ export default function Dashboard() {
     try {
       const response = await fetch('/metrics/services');
       const data = await response.json();
-      setServices(data.services);
-      setLoading(false);
+      if (data && data.services) {
+        setServices(data.services);
+      }
     } catch (error) {
-      console.error('Error fetching services:', error);
+      console.error('Failed to fetch services:', error);
     }
   };
 
   return (
-    <div className="p-6 max-w-6xl mx-auto">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold">Reverse Proxy Dashboard</h1>
-        <button 
-          onClick={fetchServices}
-          className="flex items-center gap-2 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
-        >
-          <RefreshCw size={16} />
-          Refresh
-        </button>
-      </div>
-
-      {loading ? (
-        <div className="flex justify-center items-center h-64">
-          <div className="animate-spin">
-            <RefreshCw size={24} />
-          </div>
+    <div style={{ padding: '20px', maxWidth: '1200px', margin: '0 auto' }}>
+      <h1 style={{ marginBottom: '20px', color: '#333' }}>Reverse Proxy Dashboard</h1>
+      
+      <div>
+        <div style={{ display: 'flex', alignItems: 'center', marginBottom: '20px' }}>
+          <h2 style={{ margin: 0, marginRight: '20px' }}>Services</h2>
+          <button 
+            onClick={fetchServices}
+            disabled={loading}
+            style={{
+              padding: '8px 16px',
+              background: '#007bff',
+              color: 'white',
+              border: 'none',
+              borderRadius: '4px',
+              cursor: loading ? 'not-allowed' : 'pointer'
+            }}
+          >
+            {loading ? 'Loading...' : 'Refresh'}
+          </button>
         </div>
-      ) : (
-        <div className="grid gap-6">
-          {/* Service Status Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {services.map((service) => (
-              <div key={service.name} className="p-4 bg-white rounded-lg shadow">
-                <div className="flex justify-between items-start">
-                  <div>
-                    <h3 className="font-semibold">{service.name}</h3>
-                    <p className="text-sm text-gray-500">{service.url}</p>
-                  </div>
-                  {service.status === 'healthy' ? (
-                    <CheckCircle className="text-green-500" size={20} />
-                  ) : (
-                    <AlertCircle className="text-red-500" size={20} />
-                  )}
-                </div>
-                <div className="mt-4">
-                  <div className="text-sm">
-                    <span className="text-gray-500">Last Check:</span>
-                    <span className="ml-2">
-                      {new Date(service.lastCheck).toLocaleTimeString()}
-                    </span>
-                  </div>
-                  <div className="text-sm">
-                    <span className="text-gray-500">Status:</span>
-                    <span className={`ml-2 ${
-                      service.status === 'healthy' ? 'text-green-500' : 'text-red-500'
-                    }`}>
-                      {service.status}
-                    </span>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
 
-          {/* Metrics Section */}
-          <div className="bg-white rounded-lg shadow p-6">
-            <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
-              <Activity size={20} />
-              System Metrics
-            </h2>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="p-4 bg-gray-50 rounded">
-                <h3 className="text-sm text-gray-500">Total Services</h3>
-                <p className="text-2xl font-semibold">{services.length}</p>
+        <div style={{ 
+          display: 'grid', 
+          gridTemplateColumns: 'repeat(auto-fill, minmax(350px, 1fr))',
+          gap: '20px',
+          marginBottom: '40px'
+        }}>
+          {services.map((service) => (
+            <div key={service.name} style={{ 
+              padding: '20px',
+              border: '1px solid #e1e1e1',
+              borderRadius: '8px',
+              background: 'white',
+              boxShadow: '0 2px 4px rgba(0,0,0,0.05)'
+            }}>
+              <h3 style={{ marginTop: 0, color: '#2c3e50' }}>{service.name}</h3>
+              <div style={{ marginBottom: '15px' }}>
+                <span style={{ fontWeight: 'bold' }}>Status: </span>
+                <span style={{ 
+                  color: service.status === 'healthy' ? '#27ae60' : '#e74c3c',
+                  fontWeight: 'bold'
+                }}>
+                  {service.status}
+                </span>
               </div>
-              <div className="p-4 bg-gray-50 rounded">
-                <h3 className="text-sm text-gray-500">Healthy Services</h3>
-                <p className="text-2xl font-semibold">
-                  {services.filter(s => s.status === 'healthy').length}
-                </p>
+
+              <div style={{ marginBottom: '15px' }}>
+                <strong>Access via Proxy:</strong>
+                <pre style={{ 
+                  background: '#f8f9fa',
+                  padding: '8px',
+                  borderRadius: '4px',
+                  marginTop: '4px',
+                  overflow: 'auto',
+                  fontSize: '14px'
+                }}>
+                  curl -H "Host: {service.name}.localhost" http://localhost:3000
+                </pre>
               </div>
-              <div className="p-4 bg-gray-50 rounded">
-                <h3 className="text-sm text-gray-500">Unhealthy Services</h3>
-                <p className="text-2xl font-semibold">
-                  {services.filter(s => s.status !== 'healthy').length}
-                </p>
+
+              <div style={{ marginBottom: '15px' }}>
+                <strong>Last Check:</strong>
+                <div style={{ marginTop: '4px', color: '#666' }}>
+                  {new Date(service.lastCheck).toLocaleString()}
+                </div>
               </div>
             </div>
+          ))}
+        </div>
+
+        <div style={{ 
+          background: '#f8f9fa',
+          padding: '20px',
+          borderRadius: '8px',
+          marginTop: '20px'
+        }}>
+          <h2 style={{ marginTop: 0 }}>How to Access Services</h2>
+          <div>
+            <p><strong>1. Access service endpoint:</strong></p>
+            <pre style={{ 
+              background: '#f1f3f5',
+              padding: '15px',
+              borderRadius: '4px',
+              overflowX: 'auto'
+            }}>
+              curl -H "Host: service1.localhost" http://localhost:3000
+            </pre>
+
+            <p><strong>2. Check service health:</strong></p>
+            <pre style={{ 
+              background: '#f1f3f5',
+              padding: '15px',
+              borderRadius: '4px',
+              overflowX: 'auto'
+            }}>
+              curl -H "Host: service1.localhost" http://localhost:3000/health
+            </pre>
+
+            <p><strong>3. View all services:</strong></p>
+            <pre style={{ 
+              background: '#f1f3f5',
+              padding: '15px',
+              borderRadius: '4px',
+              overflowX: 'auto'
+            }}>
+              curl http://localhost:3000/metrics/services
+            </pre>
+
+            <p><strong>4. View all service metrics:</strong></p>
+            <pre style={{ 
+              background: '#f1f3f5',
+              padding: '15px',
+              borderRadius: '4px',
+              overflowX: 'auto'
+            }}>
+              curl -H "Host: service1.localhost" http://localhost:3000/metrics/services
+            </pre>
           </div>
         </div>
-      )}
+      </div>
     </div>
   );
 }

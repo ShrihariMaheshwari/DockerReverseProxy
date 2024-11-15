@@ -92,8 +92,8 @@ app.use((req, res, next) => {
   const host = req.headers.host;
   const serviceName = host.split('.')[0];
 
-  // Skip proxy for direct localhost requests to known endpoints
-  if (host === 'localhost:3000' || host === 'localhost') {
+  // Skip proxy for admin and metrics routes
+  if (req.path.startsWith('/admin') || req.path.startsWith('/metrics')) {
     return next();
   }
 
@@ -112,17 +112,28 @@ app.use((req, res, next) => {
   const proxy = createProxyMiddleware({
     target: service.url,
     changeOrigin: true,
-    pathRewrite: {
-      '^/': '/'
+    ws: true,
+    secure: false,
+    headers: {
+      'Accept': 'application/json'
     },
     onProxyReq: (proxyReq, req, res) => {
-      proxyReq.setHeader('x-forwarded-by', 'node-reverse-proxy');
+      // Set additional headers for the proxied request
+      proxyReq.setHeader('x-forwarded-proto', 'http');
+      proxyReq.setHeader('x-forwarded-host', req.headers.host);
+      proxyReq.setHeader('x-forwarded-for', req.ip);
+    },
+    onProxyRes: (proxyRes, req, res) => {
+      // Ensure CORS headers are set
+      proxyRes.headers['Access-Control-Allow-Origin'] = '*';
+      proxyRes.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, DELETE, OPTIONS';
+      proxyRes.headers['Access-Control-Allow-Headers'] = 'Origin, X-Requested-With, Content-Type, Accept, Host';
     },
     onError: (err, req, res) => {
       console.error('Proxy Error:', err);
       res.status(502).json({
         error: 'Bad Gateway',
-        message: 'The proxy server received an invalid response from the upstream server'
+        message: 'Failed to reach the service'
       });
     }
   });
